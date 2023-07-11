@@ -11,15 +11,52 @@ namespace WebApplication_API.Controllers
     public class HotelAPIController : ControllerBase
     {
         [HttpGet("GetAllHotels")]
-        public IEnumerable<HotelDTO> GetHotels()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<IEnumerable<HotelDTO>> GetHotels()
         {
-            return HotelStore.hotelList;
+            return Ok(HotelStore.hotelList);
         }
 
         [HttpGet("GetHotelById")]
-        public HotelDTO GetHotel(int hotelId)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<HotelDTO> GetHotel(int hotelId)
         {
-            return HotelStore.hotelList.FirstOrDefault(i => i.Id == hotelId);
+            if(hotelId == 0)
+            {
+                return BadRequest();
+            }
+
+            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == hotelId);
+            if(hotel == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(hotel);
+        }
+
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public ActionResult<HotelDTO> CreateHotel([FromBody]HotelDTO hotelDTO)
+        {
+            if(hotelDTO == null)
+            {
+                return BadRequest(hotelDTO);
+            }
+
+            if(hotelDTO.Id > 0)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            hotelDTO.Id = HotelStore.hotelList.OrderByDescending(i => i.Id).FirstOrDefault().Id + 1;
+            HotelStore.hotelList.Add(hotelDTO);
+
+            return Ok(hotelDTO);
         }
     }
 }
