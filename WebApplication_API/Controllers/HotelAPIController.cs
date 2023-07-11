@@ -83,5 +83,23 @@ namespace WebApplication_API.Controllers
             HotelStore.hotelList.Remove(hotel);
             return NoContent();
         }
+
+        [HttpPut("{id:int}", Name = "UpdateHotel")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public IActionResult UpdateHotel(int id, [FromBody] HotelDTO hotelDTO)
+        {
+            if(hotelDTO == null || id != hotelDTO.Id || id == 0)
+            {
+                return BadRequest();
+            }
+
+            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
+            hotel.Name = hotelDTO.Name;
+            hotel.Price = hotelDTO.Price;
+
+            return NoContent();
+        }
     }
 }

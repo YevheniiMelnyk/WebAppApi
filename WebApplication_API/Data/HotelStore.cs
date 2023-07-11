@@ -6,8 +6,8 @@ namespace WebApplication_API.Data
     {
         public static List<HotelDTO> hotelList = new()
         {
-            new HotelDTO { Id = 1, Name = "Menalo Hotel Premium"}, 
-            new HotelDTO { Id = 2, Name = "The Green Park Ankara"}
+            new HotelDTO { Id = 1, Name = "Menalo Hotel Premium", Price = 200 }, 
+            new HotelDTO { Id = 2, Name = "The Green Park Ankara", Price = 400 }
         };
     }
 }

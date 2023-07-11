@@ -9,5 +9,7 @@ namespace WebApplication_API.Models.Dto
         [Required]
         [MaxLength(50)]
         public string Name{ get; set; }
+
+        public decimal Price { get; set; }
     }
 }
