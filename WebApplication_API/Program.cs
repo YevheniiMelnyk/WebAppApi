@@ -1,12 +1,19 @@
+using WebApplication_API.Logs;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+//Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
+//    .WriteTo.File("log/logs.txt", rollingInterval: RollingInterval.Day).CreateLogger();
+//builder.Host.UseSerilog();
 
-builder.Services.AddControllers().AddNewtonsoftJson();
+builder.Services.AddControllers(option => {
+    //option.ReturnHttpNotAcceptable = true;
+}).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters(); // we can get response with xml and json formats
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddSingleton<ILogs, Logs>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

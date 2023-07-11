@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication_API.Data;
+using WebApplication_API.Logs;
 using WebApplication_API.Models.Dto;
 
 namespace WebApplication_API.Controllers
@@ -9,10 +10,18 @@ namespace WebApplication_API.Controllers
     [ApiController]
     public class HotelAPIController : ControllerBase
     {
+        private readonly ILogs _loger;
+
+        public HotelAPIController(ILogs loger)
+        {
+            _loger = loger;
+        }
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<HotelDTO>> GetHotels()
         {
+            _loger.Log("Getting all hotels", "");
             return Ok(HotelStore.hotelList);
         }
 
@@ -22,14 +31,18 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<HotelDTO> GetHotel(int id)
         {
-            if(id == 0)
+            if (id == 0)
             {
+                _loger.Log($"Invalid id: {id}", "error");
+
                 return BadRequest();
             }
 
             var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
-            if(hotel == null)
+            if (hotel == null)
             {
+                _loger.Log($"Hotel not found, id: {id}", "warning");
+
                 return NotFound();
             }
 
@@ -40,20 +53,20 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<HotelDTO> CreateHotel([FromBody]HotelDTO hotelDTO)
+        public ActionResult<HotelDTO> CreateHotel([FromBody] HotelDTO hotelDTO)
         {
-            if(HotelStore.hotelList.FirstOrDefault(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
+            if (HotelStore.hotelList.FirstOrDefault(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Hotel already exist.");
                 return BadRequest(ModelState);
             }
 
-            if(hotelDTO == null)
+            if (hotelDTO == null)
             {
                 return BadRequest(hotelDTO);
             }
 
-            if(hotelDTO.Id > 0)
+            if (hotelDTO.Id > 0)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
@@ -90,7 +103,7 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult UpdateHotel(int id, [FromBody] HotelDTO hotelDTO)
         {
-            if(hotelDTO == null || id != hotelDTO.Id || id == 0)
+            if (hotelDTO == null || id != hotelDTO.Id || id == 0)
             {
                 return BadRequest();
             }
@@ -107,13 +120,13 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public IActionResult UpdatePartialHotel(int id, JsonPatchDocument<HotelDTO> patchDTO)
         {
-            if(patchDTO == null || id == 0)
+            if (patchDTO == null || id == 0)
             {
                 return BadRequest();
             }
 
             var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
-            if(hotel == null)
+            if (hotel == null)
             {
                 return BadRequest();
             }
