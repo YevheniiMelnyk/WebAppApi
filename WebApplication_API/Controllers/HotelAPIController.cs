@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 using WebApplication_API.Data;
 using WebApplication_API.Models.Dto;
 
@@ -97,6 +98,31 @@ namespace WebApplication_API.Controllers
             var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
             hotel.Name = hotelDTO.Name;
             hotel.Price = hotelDTO.Price;
+
+            return NoContent();
+        }
+
+        [HttpPatch("{id:int}", Name = "UpdatePartialHotel")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult UpdatePartialHotel(int id, JsonPatchDocument<HotelDTO> patchDTO)
+        {
+            if(patchDTO == null || id == 0)
+            {
+                return BadRequest();
+            }
+
+            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
+            if(hotel == null)
+            {
+                return BadRequest();
+            }
+
+            patchDTO.ApplyTo(hotel, ModelState);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest();
+            }
 
             return NoContent();
         }
