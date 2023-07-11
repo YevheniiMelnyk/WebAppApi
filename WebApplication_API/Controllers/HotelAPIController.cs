@@ -41,6 +41,12 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<HotelDTO> CreateHotel([FromBody]HotelDTO hotelDTO)
         {
+            if(HotelStore.hotelList.FirstOrDefault(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
+            {
+                ModelState.AddModelError("CustomError", "Hotel already exist.");
+                return BadRequest(ModelState);
+            }
+
             if(hotelDTO == null)
             {
                 return BadRequest(hotelDTO);
