@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApplication_API.Data;
-using WebApplication_API.Model;
 using WebApplication_API.Models.Dto;
 
 namespace WebApplication_API.Controllers
@@ -10,25 +8,25 @@ namespace WebApplication_API.Controllers
     [ApiController]
     public class HotelAPIController : ControllerBase
     {
-        [HttpGet("GetAllHotels")]
+        [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<HotelDTO>> GetHotels()
         {
             return Ok(HotelStore.hotelList);
         }
 
-        [HttpGet("GetHotelById")]
+        [HttpGet("{id:int}", Name = "GetHotel")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<HotelDTO> GetHotel(int hotelId)
+        public ActionResult<HotelDTO> GetHotel(int id)
         {
-            if(hotelId == 0)
+            if(id == 0)
             {
                 return BadRequest();
             }
 
-            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == hotelId);
+            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
             if(hotel == null)
             {
                 return NotFound();
@@ -38,7 +36,7 @@ namespace WebApplication_API.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<HotelDTO> CreateHotel([FromBody]HotelDTO hotelDTO)
@@ -56,7 +54,7 @@ namespace WebApplication_API.Controllers
             hotelDTO.Id = HotelStore.hotelList.OrderByDescending(i => i.Id).FirstOrDefault().Id + 1;
             HotelStore.hotelList.Add(hotelDTO);
 
-            return Ok(hotelDTO);
+            return CreatedAtRoute("GetHotel", new { id = hotelDTO.Id }, hotelDTO);
         }
     }
 }
