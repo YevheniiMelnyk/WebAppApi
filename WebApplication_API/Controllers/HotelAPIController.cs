@@ -87,7 +87,6 @@ namespace WebApplication_API.Controllers
         [HttpPut("{id:int}", Name = "UpdateHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public IActionResult UpdateHotel(int id, [FromBody] HotelDTO hotelDTO)
         {
             if(hotelDTO == null || id != hotelDTO.Id || id == 0)
