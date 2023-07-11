@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication_API.Data;
-using WebApplication_API.Logs;
 using WebApplication_API.Models.Dto;
 
 namespace WebApplication_API.Controllers
@@ -10,18 +9,10 @@ namespace WebApplication_API.Controllers
     [ApiController]
     public class HotelAPIController : ControllerBase
     {
-        private readonly ILogs _loger;
-
-        public HotelAPIController(ILogs loger)
-        {
-            _loger = loger;
-        }
-
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<HotelDTO>> GetHotels()
         {
-            _loger.Log("Getting all hotels", "");
             return Ok(HotelStore.hotelList);
         }
 
@@ -33,16 +24,12 @@ namespace WebApplication_API.Controllers
         {
             if (id == 0)
             {
-                _loger.Log($"Invalid id: {id}", "error");
-
                 return BadRequest();
             }
 
             var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
             if (hotel == null)
             {
-                _loger.Log($"Hotel not found, id: {id}", "warning");
-
                 return NotFound();
             }
 
