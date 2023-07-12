@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using WebApplication_API.Data;
+using WebApplication_API.Model;
 using WebApplication_API.Models.Dto;
 
 namespace WebApplication_API.Controllers
@@ -9,11 +10,18 @@ namespace WebApplication_API.Controllers
     [ApiController]
     public class HotelAPIController : ControllerBase
     {
+        private readonly AppDbContext _dbContext;
+
+        public HotelAPIController(AppDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public ActionResult<IEnumerable<HotelDTO>> GetHotels()
         {
-            return Ok(HotelStore.hotelList);
+            return Ok(_dbContext.Hotels.ToList());
         }
 
         [HttpGet("{id:int}", Name = "GetHotel")]
@@ -27,7 +35,7 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
+            var hotel = _dbContext.Hotels.FirstOrDefault(i => i.Id == id);
             if (hotel == null)
             {
                 return NotFound();
@@ -42,7 +50,7 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<HotelDTO> CreateHotel([FromBody] HotelDTO hotelDTO)
         {
-            if (HotelStore.hotelList.FirstOrDefault(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
+            if (_dbContext.Hotels.FirstOrDefault(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Hotel already exist.");
                 return BadRequest(ModelState);
@@ -58,8 +66,18 @@ namespace WebApplication_API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
-            hotelDTO.Id = HotelStore.hotelList.OrderByDescending(i => i.Id).FirstOrDefault().Id + 1;
-            HotelStore.hotelList.Add(hotelDTO);
+            Hotel hotel = new Hotel()
+            {
+                Id = hotelDTO.Id,
+                Name = hotelDTO.Name,
+                Description = hotelDTO.Description,
+                Rate = hotelDTO.Rate,
+                ImageUrl = hotelDTO.ImageUrl,
+                CreatedDate = DateTime.Now
+            };
+
+            _dbContext.Hotels.Add(hotel);
+            _dbContext.SaveChanges();
 
             return CreatedAtRoute("GetHotel", new { id = hotelDTO.Id }, hotelDTO);
         }
@@ -75,13 +93,15 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
+            var hotel = _dbContext.Hotels.FirstOrDefault(i => i.Id == id);
             if (hotel == null)
             {
                 return NotFound();
             }
 
-            HotelStore.hotelList.Remove(hotel);
+            _dbContext.Hotels.Remove(hotel);
+            _dbContext.SaveChanges();
+
             return NoContent();
         }
 
@@ -95,9 +115,17 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
-            hotel.Name = hotelDTO.Name;
-            hotel.Price = hotelDTO.Price;
+            Hotel model = new Hotel()
+            {
+                Id = hotelDTO.Id,
+                Name = hotelDTO.Name,
+                Description = hotelDTO.Description,
+                Rate = hotelDTO.Rate,
+                ImageUrl = hotelDTO.ImageUrl,
+                UpdateDate = DateTime.Now
+            };
+            _dbContext.Hotels.Update(model);
+            _dbContext.SaveChanges();
 
             return NoContent();
         }
@@ -112,13 +140,37 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = HotelStore.hotelList.FirstOrDefault(i => i.Id == id);
+            var hotel = _dbContext.Hotels.FirstOrDefault(i => i.Id == id);
+
+            HotelDTO hotelDTO = new HotelDTO()
+            {
+                Id = hotel.Id,
+                Name = hotel.Name,
+                Description = hotel.Description,
+                Rate = hotel.Rate,
+                ImageUrl = hotel.ImageUrl                
+            };
+
             if (hotel == null)
             {
                 return BadRequest();
             }
 
-            patchDTO.ApplyTo(hotel, ModelState);
+            patchDTO.ApplyTo(hotelDTO, ModelState);
+
+            Hotel model = new Hotel()
+            {
+                Id = hotel.Id,
+                Name = hotel.Name,
+                Description = hotel.Description,
+                Rate = hotel.Rate,
+                ImageUrl = hotel.ImageUrl,
+                UpdateDate = DateTime.Now
+            };
+
+            _dbContext.Hotels.Update(model);
+            _dbContext.SaveChanges();
+
             if (!ModelState.IsValid)
             {
                 return BadRequest();
