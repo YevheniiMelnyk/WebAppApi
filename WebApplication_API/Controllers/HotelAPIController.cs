@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.JsonPatch;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication_API.Data;
@@ -12,17 +14,21 @@ namespace WebApplication_API.Controllers
     public class HotelAPIController : ControllerBase
     {
         private readonly AppDbContext _dbContext;
+        private readonly IMapper _mapper;
 
-        public HotelAPIController(AppDbContext dbContext)
+        public HotelAPIController(AppDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<HotelDTO>>> GetHotels()
         {
-            return Ok(await _dbContext.Hotels.ToListAsync());
+            IEnumerable<Hotel> hotelList = await _dbContext.Hotels.ToListAsync();
+
+            return Ok(_mapper.Map<IEnumerable<HotelDTO>>(hotelList));
         }
 
         [HttpGet("{id:int}", Name = "GetHotel")]
@@ -42,34 +48,34 @@ namespace WebApplication_API.Controllers
                 return NotFound();
             }
 
-            return Ok(hotel);
+            return Ok(_mapper.Map<HotelDTO>(hotel));
         }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<HotelDTO>> CreateHotel([FromBody] HotelCreateDTO hotelDTO)
+        public async Task<ActionResult<HotelDTO>> CreateHotel([FromBody] HotelCreateDTO createDTO)
         {
-            if (await _dbContext.Hotels.FirstOrDefaultAsync(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
+            if (await _dbContext.Hotels.FirstOrDefaultAsync(i => i.Name.ToLower() == createDTO.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Hotel already exist.");
                 return BadRequest(ModelState);
             }
 
-            if (hotelDTO == null)
+            if (createDTO == null)
             {
-                return BadRequest(hotelDTO);
+                return BadRequest(createDTO);
             }
-
-            Hotel model = new()
-            {
-                Name = hotelDTO.Name,
-                Description = hotelDTO.Description,
-                Rate = hotelDTO.Rate,
-                ImageUrl = hotelDTO.ImageUrl,
-                CreatedDate = DateTime.Now
-            };
+            Hotel model = _mapper.Map<Hotel>(createDTO);
+            //Hotel model = new()
+            //{
+            //    Name = createDTO.Name,
+            //    Description = createDTO.Description,
+            //    Rate = createDTO.Rate,
+            //    ImageUrl = createDTO.ImageUrl,
+            //    CreatedDate = DateTime.Now
+            //};
 
             await _dbContext.Hotels.AddAsync(model);
             await _dbContext.SaveChangesAsync();
@@ -103,23 +109,25 @@ namespace WebApplication_API.Controllers
         [HttpPut("{id:int}", Name = "UpdateHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> UpdateHotel(int id, [FromBody] HotelUpdateDTO hotelDTO)
+        public async Task<IActionResult> UpdateHotel(int id, [FromBody] HotelUpdateDTO updateDTO)
         {
-            if (hotelDTO == null || id != hotelDTO.Id || id == 0)
+            if (updateDTO == null || id != updateDTO.Id || id == 0)
             {
                 return BadRequest();
             }
 
-            Hotel model = new()
-            {
-                Id = hotelDTO.Id,
-                Name = hotelDTO.Name,
-                Description = hotelDTO.Description,
-                Rate = hotelDTO.Rate,
-                ImageUrl = hotelDTO.ImageUrl,
-                CreatedDate = hotelDTO.CreatedDate,
-                UpdateDate = DateTime.Now
-            };
+            Hotel model = _mapper.Map<Hotel>(updateDTO);
+            //Hotel model = new()
+            //{
+            //    Id = updateDTO.Id,
+            //    Name = updateDTO.Name,
+            //    Description = updateDTO.Description,
+            //    Rate = updateDTO.Rate,
+            //    ImageUrl = updateDTO.ImageUrl,
+            //    CreatedDate = updateDTO.CreatedDate,
+            //    UpdateDate = DateTime.Now
+            //};
+
             _dbContext.Hotels.Update(model);
             await _dbContext.SaveChangesAsync();
 
@@ -138,15 +146,17 @@ namespace WebApplication_API.Controllers
 
             var hotel = await _dbContext.Hotels.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
 
-            HotelUpdateDTO hotelDTO = new()
-            {
-                Id = hotel.Id,
-                Name = hotel.Name,
-                Description = hotel.Description,
-                Rate = hotel.Rate,
-                ImageUrl = hotel.ImageUrl,
-                CreatedDate = hotel.CreatedDate
-            };
+
+            HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
+            //HotelUpdateDTO hotelDTO = new()
+            //{
+            //    Id = hotel.Id,
+            //    Name = hotel.Name,
+            //    Description = hotel.Description,
+            //    Rate = hotel.Rate,
+            //    ImageUrl = hotel.ImageUrl,
+            //    CreatedDate = hotel.CreatedDate
+            //};
 
             if (hotel == null)
             {
@@ -155,16 +165,17 @@ namespace WebApplication_API.Controllers
 
             patchDTO.ApplyTo(hotelDTO, ModelState);
 
-            Hotel model = new()
-            {
-                Id = hotelDTO.Id,
-                Name = hotelDTO.Name,
-                Description = hotelDTO.Description,
-                Rate = hotelDTO.Rate,
-                ImageUrl = hotelDTO.ImageUrl,
-                CreatedDate = hotelDTO.CreatedDate,
-                UpdateDate = DateTime.Now
-            };
+            Hotel model = _mapper.Map<Hotel>(patchDTO);
+            //Hotel model = new()
+            //{
+            //    Id = hotelDTO.Id,
+            //    Name = hotelDTO.Name,
+            //    Description = hotelDTO.Description,
+            //    Rate = hotelDTO.Rate,
+            //    ImageUrl = hotelDTO.ImageUrl,
+            //    CreatedDate = hotelDTO.CreatedDate,
+            //    UpdateDate = DateTime.Now
+            //};
 
             _dbContext.Hotels.Update(model);
             await _dbContext.SaveChangesAsync();

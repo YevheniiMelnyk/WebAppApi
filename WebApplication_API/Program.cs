@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WebApplication_API;
 using WebApplication_API.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,8 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 {
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+builder.Services.AddAutoMapper(typeof(MappingConfig));
 
 builder.Services.AddControllers(option => {
     //option.ReturnHttpNotAcceptable = true;
