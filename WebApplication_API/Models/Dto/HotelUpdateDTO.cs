@@ -2,8 +2,9 @@
 
 namespace WebApplication_API.Models.Dto
 {
-    public class HotelDTO
+    public class HotelUpdateDTO
     {
+        [Required]
         public int Id { get; set; }
 
         [Required]
@@ -13,6 +14,7 @@ namespace WebApplication_API.Models.Dto
         public string Description { get; set; }
         [Required]
         public double Rate { get; set; }
+        [Required]
         public string ImageUrl { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdateDate { get; set; }

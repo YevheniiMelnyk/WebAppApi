@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using WebApplication_API.Data;
 using WebApplication_API.Model;
 using WebApplication_API.Models.Dto;
@@ -48,7 +49,7 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<HotelDTO> CreateHotel([FromBody] HotelDTO hotelDTO)
+        public ActionResult<HotelDTO> CreateHotel([FromBody] HotelCreateDTO hotelDTO)
         {
             if (_dbContext.Hotels.FirstOrDefault(i => i.Name.ToLower() == hotelDTO.Name.ToLower()) != null)
             {
@@ -61,14 +62,8 @@ namespace WebApplication_API.Controllers
                 return BadRequest(hotelDTO);
             }
 
-            if (hotelDTO.Id > 0)
+            Hotel model = new()
             {
-                return StatusCode(StatusCodes.Status500InternalServerError);
-            }
-
-            Hotel hotel = new Hotel()
-            {
-                Id = hotelDTO.Id,
                 Name = hotelDTO.Name,
                 Description = hotelDTO.Description,
                 Rate = hotelDTO.Rate,
@@ -76,10 +71,10 @@ namespace WebApplication_API.Controllers
                 CreatedDate = DateTime.Now
             };
 
-            _dbContext.Hotels.Add(hotel);
+            _dbContext.Hotels.Add(model);
             _dbContext.SaveChanges();
 
-            return CreatedAtRoute("GetHotel", new { id = hotelDTO.Id }, hotelDTO);
+            return CreatedAtRoute("GetHotel", new { id = model.Id }, model);
         }
 
         [HttpDelete("{id:int}", Name = "DeleteHotel")]
@@ -108,20 +103,21 @@ namespace WebApplication_API.Controllers
         [HttpPut("{id:int}", Name = "UpdateHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult UpdateHotel(int id, [FromBody] HotelDTO hotelDTO)
+        public IActionResult UpdateHotel(int id, [FromBody] HotelUpdateDTO hotelDTO)
         {
             if (hotelDTO == null || id != hotelDTO.Id || id == 0)
             {
                 return BadRequest();
             }
 
-            Hotel model = new Hotel()
+            Hotel model = new()
             {
                 Id = hotelDTO.Id,
                 Name = hotelDTO.Name,
                 Description = hotelDTO.Description,
                 Rate = hotelDTO.Rate,
                 ImageUrl = hotelDTO.ImageUrl,
+                CreatedDate = hotelDTO.CreatedDate,
                 UpdateDate = DateTime.Now
             };
             _dbContext.Hotels.Update(model);
@@ -133,22 +129,23 @@ namespace WebApplication_API.Controllers
         [HttpPatch("{id:int}", Name = "UpdatePartialHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public IActionResult UpdatePartialHotel(int id, JsonPatchDocument<HotelDTO> patchDTO)
+        public IActionResult UpdatePartialHotel(int id, JsonPatchDocument<HotelUpdateDTO> patchDTO)
         {
             if (patchDTO == null || id == 0)
             {
                 return BadRequest();
             }
 
-            var hotel = _dbContext.Hotels.FirstOrDefault(i => i.Id == id);
+            var hotel = _dbContext.Hotels.AsNoTracking().FirstOrDefault(i => i.Id == id);
 
-            HotelDTO hotelDTO = new HotelDTO()
+            HotelUpdateDTO hotelDTO = new()
             {
                 Id = hotel.Id,
                 Name = hotel.Name,
                 Description = hotel.Description,
                 Rate = hotel.Rate,
-                ImageUrl = hotel.ImageUrl                
+                ImageUrl = hotel.ImageUrl,
+                CreatedDate = hotel.CreatedDate
             };
 
             if (hotel == null)
@@ -158,13 +155,14 @@ namespace WebApplication_API.Controllers
 
             patchDTO.ApplyTo(hotelDTO, ModelState);
 
-            Hotel model = new Hotel()
+            Hotel model = new()
             {
-                Id = hotel.Id,
-                Name = hotel.Name,
-                Description = hotel.Description,
-                Rate = hotel.Rate,
-                ImageUrl = hotel.ImageUrl,
+                Id = hotelDTO.Id,
+                Name = hotelDTO.Name,
+                Description = hotelDTO.Description,
+                Rate = hotelDTO.Rate,
+                ImageUrl = hotelDTO.ImageUrl,
+                CreatedDate = hotelDTO.CreatedDate,
                 UpdateDate = DateTime.Now
             };
 
