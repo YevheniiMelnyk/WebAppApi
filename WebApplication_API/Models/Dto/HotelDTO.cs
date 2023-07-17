@@ -5,7 +5,6 @@ namespace WebApplication_API.Models.Dto
     public class HotelDTO
     {
         public int Id { get; set; }
-
         [Required]
         [MaxLength(50)]
         public string Name{ get; set; }
@@ -14,7 +13,5 @@ namespace WebApplication_API.Models.Dto
         [Required]
         public double Rate { get; set; }
         public string ImageUrl { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public DateTime UpdateDate { get; set; }
     }
 }

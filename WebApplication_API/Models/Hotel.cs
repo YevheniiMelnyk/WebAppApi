@@ -12,7 +12,7 @@ namespace WebApplication_API.Model
         public string Description { get; set; }
         public double Rate { get; set; }
         public string ImageUrl { get; set; }
-        public DateTime CreatedDate{ get; set; }
-        public DateTime UpdateDate{ get; set; }
+        public DateTime? CreatedDate{ get; set; }
+        public DateTime? UpdateDate{ get; set; }
     }
 }

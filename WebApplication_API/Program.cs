@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using WebApplication_API;
 using WebApplication_API.Data;
+using WebApplication_API.Repository;
+using WebApplication_API.Repository.IRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 
 builder.Services.AddAutoMapper(typeof(MappingConfig));
 
+builder.Services.AddScoped<IHotelRepository, HotelRepository>();
 builder.Services.AddControllers(option => {
     //option.ReturnHttpNotAcceptable = true;
 }).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters(); // we can get response with xml and json formats

@@ -8,9 +8,14 @@ namespace WebApplication_API
     {
         public MappingConfig() 
         {
-            CreateMap<Hotel, HotelDTO>().ReverseMap();
+            CreateMap<Hotel, HotelDTO>();
+            CreateMap<HotelDTO, Hotel>();
+
             CreateMap<HotelDTO, HotelCreateDTO>().ReverseMap();
+            //CreateMap<HotelCreateDTO, HotelDTO>();
+
             CreateMap<HotelDTO, HotelUpdateDTO>().ReverseMap();
+            //CreateMap<HotelUpdateDTO, HotelDTO>();
         }
     }
 }

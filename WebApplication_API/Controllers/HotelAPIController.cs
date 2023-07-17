@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using WebApplication_API.Data;
 using WebApplication_API.Model;
 using WebApplication_API.Models.Dto;
+using WebApplication_API.Repository.IRepository;
 
 namespace WebApplication_API.Controllers
 {
@@ -13,12 +14,12 @@ namespace WebApplication_API.Controllers
     [ApiController]
     public class HotelAPIController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly IHotelRepository _dbHotel;
         private readonly IMapper _mapper;
 
-        public HotelAPIController(AppDbContext dbContext, IMapper mapper)
+        public HotelAPIController(IHotelRepository dbHotel, IMapper mapper)
         {
-            _dbContext = dbContext;
+            _dbHotel = dbHotel;
             _mapper = mapper;
         }
 
@@ -26,7 +27,7 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<HotelDTO>>> GetHotels()
         {
-            IEnumerable<Hotel> hotelList = await _dbContext.Hotels.ToListAsync();
+            IEnumerable<Hotel> hotelList = await _dbHotel.GetAllHotelAsync();
 
             return Ok(_mapper.Map<IEnumerable<HotelDTO>>(hotelList));
         }
@@ -42,7 +43,7 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = await _dbContext.Hotels.FirstOrDefaultAsync(i => i.Id == id);
+            var hotel = await _dbHotel.GetAsync(i => i.Id == id);
             if (hotel == null)
             {
                 return NotFound();
@@ -57,7 +58,7 @@ namespace WebApplication_API.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<HotelDTO>> CreateHotel([FromBody] HotelCreateDTO createDTO)
         {
-            if (await _dbContext.Hotels.FirstOrDefaultAsync(i => i.Name.ToLower() == createDTO.Name.ToLower()) != null)
+            if (await _dbHotel.GetAsync(i => i.Name.ToLower() == createDTO.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Hotel already exist.");
                 return BadRequest(ModelState);
@@ -67,18 +68,11 @@ namespace WebApplication_API.Controllers
             {
                 return BadRequest(createDTO);
             }
-            Hotel model = _mapper.Map<Hotel>(createDTO);
-            //Hotel model = new()
-            //{
-            //    Name = createDTO.Name,
-            //    Description = createDTO.Description,
-            //    Rate = createDTO.Rate,
-            //    ImageUrl = createDTO.ImageUrl,
-            //    CreatedDate = DateTime.Now
-            //};
 
-            await _dbContext.Hotels.AddAsync(model);
-            await _dbContext.SaveChangesAsync();
+            Hotel model = _mapper.Map<Hotel>(createDTO);
+            model.CreatedDate = DateTime.Now;
+
+            await _dbHotel.CreateAsync(model);
 
             return CreatedAtRoute("GetHotel", new { id = model.Id }, model);
         }
@@ -94,14 +88,13 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = await _dbContext.Hotels.FirstOrDefaultAsync(i => i.Id == id);
+            var hotel = await _dbHotel.GetAsync(i => i.Id == id);
             if (hotel == null)
             {
                 return NotFound();
             }
 
-            _dbContext.Hotels.Remove(hotel);
-            await _dbContext.SaveChangesAsync();
+            _dbHotel.RemoveAsync(hotel);
 
             return NoContent();
         }
@@ -117,19 +110,8 @@ namespace WebApplication_API.Controllers
             }
 
             Hotel model = _mapper.Map<Hotel>(updateDTO);
-            //Hotel model = new()
-            //{
-            //    Id = updateDTO.Id,
-            //    Name = updateDTO.Name,
-            //    Description = updateDTO.Description,
-            //    Rate = updateDTO.Rate,
-            //    ImageUrl = updateDTO.ImageUrl,
-            //    CreatedDate = updateDTO.CreatedDate,
-            //    UpdateDate = DateTime.Now
-            //};
 
-            _dbContext.Hotels.Update(model);
-            await _dbContext.SaveChangesAsync();
+            _dbHotel.UpdateAsync(model);
 
             return NoContent();
         }
@@ -144,19 +126,10 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            var hotel = await _dbContext.Hotels.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
+            var hotel = await _dbHotel.GetAsync(i => i.Id == id, tracked: false);
 
 
             HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
-            //HotelUpdateDTO hotelDTO = new()
-            //{
-            //    Id = hotel.Id,
-            //    Name = hotel.Name,
-            //    Description = hotel.Description,
-            //    Rate = hotel.Rate,
-            //    ImageUrl = hotel.ImageUrl,
-            //    CreatedDate = hotel.CreatedDate
-            //};
 
             if (hotel == null)
             {
@@ -166,19 +139,8 @@ namespace WebApplication_API.Controllers
             patchDTO.ApplyTo(hotelDTO, ModelState);
 
             Hotel model = _mapper.Map<Hotel>(patchDTO);
-            //Hotel model = new()
-            //{
-            //    Id = hotelDTO.Id,
-            //    Name = hotelDTO.Name,
-            //    Description = hotelDTO.Description,
-            //    Rate = hotelDTO.Rate,
-            //    ImageUrl = hotelDTO.ImageUrl,
-            //    CreatedDate = hotelDTO.CreatedDate,
-            //    UpdateDate = DateTime.Now
-            //};
 
-            _dbContext.Hotels.Update(model);
-            await _dbContext.SaveChangesAsync();
+            _dbHotel.UpdateAsync(model);
 
             if (!ModelState.IsValid)
             {
