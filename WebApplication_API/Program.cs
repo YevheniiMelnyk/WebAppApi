@@ -14,6 +14,8 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 builder.Services.AddAutoMapper(typeof(MappingConfig));
 
 builder.Services.AddScoped<IHotelRepository, HotelRepository>();
+
+
 builder.Services.AddControllers(option => {
     //option.ReturnHttpNotAcceptable = true;
 }).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters(); // we can get response with xml and json formats

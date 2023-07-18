@@ -69,7 +69,16 @@ namespace WebApplication_API.Controllers
                 return BadRequest(createDTO);
             }
 
-            Hotel model = _mapper.Map<Hotel>(createDTO);
+            //Hotel model = _mapper.Map<Hotel>(createDTO);
+            //model.CreatedDate = DateTime.Now;
+
+            Hotel model = new()
+            {
+                Description = createDTO.Description,
+                ImageUrl = createDTO.ImageUrl,
+                Name = createDTO.Name,
+                Rate = createDTO.Rate
+            };
             model.CreatedDate = DateTime.Now;
 
             await _dbHotel.CreateAsync(model);
@@ -109,7 +118,15 @@ namespace WebApplication_API.Controllers
                 return BadRequest();
             }
 
-            Hotel model = _mapper.Map<Hotel>(updateDTO);
+            //Hotel model = _mapper.Map<Hotel>(updateDTO); 
+            Hotel model = new()
+            {
+                Description = updateDTO.Description,
+                ImageUrl = updateDTO.ImageUrl,
+                Name = updateDTO.Name,
+                Rate = updateDTO.Rate
+            };
+            model.UpdateDate = DateTime.Now;
 
             _dbHotel.UpdateAsync(model);
 
@@ -129,7 +146,14 @@ namespace WebApplication_API.Controllers
             var hotel = await _dbHotel.GetAsync(i => i.Id == id, tracked: false);
 
 
-            HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
+            //HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
+            HotelUpdateDTO hotelDTO = new()
+            {
+                Description = hotel.Description,
+                ImageUrl = hotel.ImageUrl,
+                Name = hotel.Name,
+                Rate = hotel.Rate
+            };
 
             if (hotel == null)
             {
@@ -138,7 +162,15 @@ namespace WebApplication_API.Controllers
 
             patchDTO.ApplyTo(hotelDTO, ModelState);
 
-            Hotel model = _mapper.Map<Hotel>(patchDTO);
+            //Hotel model = _mapper.Map<Hotel>(patchDTO);
+            Hotel model = new()
+            {
+                Description = hotelDTO.Description,
+                ImageUrl = hotelDTO.ImageUrl,
+                Name = hotelDTO.Name,
+                Rate = hotelDTO.Rate
+            };
+            model.UpdateDate = DateTime.Now;
 
             _dbHotel.UpdateAsync(model);
 
