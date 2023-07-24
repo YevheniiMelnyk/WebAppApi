@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using WebApplication_API.Data;
+using System.Net;
 using WebApplication_API.Model;
+using WebApplication_API.Models;
 using WebApplication_API.Models.Dto;
 using WebApplication_API.Repository.IRepository;
 
@@ -14,6 +13,7 @@ namespace WebApplication_API.Controllers
     [ApiController]
     public class HotelAPIController : ControllerBase
     {
+        protected APIResponse _response;
         private readonly IHotelRepository _dbHotel;
         private readonly IMapper _mapper;
 
@@ -21,166 +21,251 @@ namespace WebApplication_API.Controllers
         {
             _dbHotel = dbHotel;
             _mapper = mapper;
+            this._response = new();
         }
 
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<HotelDTO>>> GetHotels()
+        public async Task<ActionResult<APIResponse>> GetHotels()
         {
-            IEnumerable<Hotel> hotelList = await _dbHotel.GetAllHotelAsync();
+            try
+            {
+                IEnumerable<Hotel> hotelList = await _dbHotel.GetAllHotelAsync();
+                _response.Result = _mapper.Map<IEnumerable<HotelDTO>>(hotelList);
+                _response.StatusCode = HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.Errors = new List<string> { ex.ToString() };
+            }
 
-            return Ok(_mapper.Map<IEnumerable<HotelDTO>>(hotelList));
+            return _response;
         }
 
         [HttpGet("{id:int}", Name = "GetHotel")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<HotelDTO>> GetHotel(int id)
+        public async Task<ActionResult<APIResponse>> GetHotel(int id)
         {
-            if (id == 0)
+            try
             {
-                return BadRequest();
-            }
+                if (id == 0)
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
 
-            var hotel = await _dbHotel.GetAsync(i => i.Id == id);
-            if (hotel == null)
+                var hotel = await _dbHotel.GetAsync(i => i.Id == id);
+                if (hotel == null)
+                {
+                    _response.StatusCode = HttpStatusCode.NotFound;
+                    return NotFound(_response);
+                }
+
+                _response.Result = _mapper.Map<HotelDTO>(hotel);
+                _response.StatusCode = HttpStatusCode.OK;
+                return Ok(_response);
+
+            }
+            catch (Exception ex)
             {
-                return NotFound();
+                _response.IsSuccess = false;
+                _response.Errors = new List<string> { ex.ToString() };
             }
-
-            return Ok(_mapper.Map<HotelDTO>(hotel));
+            return _response;
+            //return Ok(_mapper.Map<HotelDTO>(hotel));
         }
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<HotelDTO>> CreateHotel([FromBody] HotelCreateDTO createDTO)
+        public async Task<ActionResult<APIResponse>> CreateHotel([FromBody] HotelCreateDTO createDTO)
         {
-            if (await _dbHotel.GetAsync(i => i.Name.ToLower() == createDTO.Name.ToLower()) != null)
+            try
             {
-                ModelState.AddModelError("CustomError", "Hotel already exist.");
-                return BadRequest(ModelState);
+                if (await _dbHotel.GetAsync(i => i.Name.ToLower() == createDTO.Name.ToLower()) != null)
+                {
+                    ModelState.AddModelError("CustomError", "Hotel already exist.");
+                    return BadRequest(ModelState);
+                }
+
+                if (createDTO == null)
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                //Hotel model = _mapper.Map<Hotel>(createDTO);
+                //model.CreatedDate = DateTime.Now;
+
+                Hotel hotel = new()
+                {
+                    Description = createDTO.Description,
+                    ImageUrl = createDTO.ImageUrl,
+                    Name = createDTO.Name,
+                    Rate = createDTO.Rate
+                };
+                hotel.CreatedDate = DateTime.Now;
+
+                await _dbHotel.CreateAsync(hotel);
+
+                _response.Result = _mapper.Map<HotelDTO>(hotel);
+                _response.StatusCode = HttpStatusCode.Created;
+
+                return CreatedAtRoute("GetHotel", new { id = hotel.Id }, _response);
             }
-
-            if (createDTO == null)
+            catch (Exception ex)
             {
-                return BadRequest(createDTO);
+                _response.IsSuccess = false;
+                _response.Errors = new List<string> { ex.ToString() };
             }
-
-            //Hotel model = _mapper.Map<Hotel>(createDTO);
-            //model.CreatedDate = DateTime.Now;
-
-            Hotel model = new()
-            {
-                Description = createDTO.Description,
-                ImageUrl = createDTO.ImageUrl,
-                Name = createDTO.Name,
-                Rate = createDTO.Rate
-            };
-            model.CreatedDate = DateTime.Now;
-
-            await _dbHotel.CreateAsync(model);
-
-            return CreatedAtRoute("GetHotel", new { id = model.Id }, model);
+            return _response;
         }
 
         [HttpDelete("{id:int}", Name = "DeleteHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteHotel(int id)
+        public async Task<ActionResult<APIResponse>> DeleteHotel(int id)
         {
-            if (id == 0)
+            try
             {
-                return BadRequest();
+                if (id == 0)
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                var hotel = await _dbHotel.GetAsync(i => i.Id == id);
+                if (hotel == null)
+                {
+                    _response.StatusCode = HttpStatusCode.NotFound;
+                    return NotFound(_response);
+                }
+
+                await _dbHotel.RemoveAsync(hotel);
+                _response.Result = _mapper.Map<HotelDTO>(hotel);
+                _response.IsSuccess = true;
+                _response.StatusCode = HttpStatusCode.NoContent;
+
+                return Ok(_response);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.Errors = new List<string> { ex.ToString() };
             }
 
-            var hotel = await _dbHotel.GetAsync(i => i.Id == id);
-            if (hotel == null)
-            {
-                return NotFound();
-            }
-
-            await _dbHotel.RemoveAsync(hotel);
-
-            return NoContent();
+            return _response;
         }
 
         [HttpPut("{id:int}", Name = "UpdateHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> UpdateHotel(int id, [FromBody] HotelUpdateDTO updateDTO)
+        public async Task<ActionResult<APIResponse>> UpdateHotel(int id, [FromBody] HotelUpdateDTO updateDTO)
         {
-            if (updateDTO == null || id != updateDTO.Id || id == 0)
+            try
             {
-                return BadRequest();
+                if (updateDTO == null || id != updateDTO.Id || id == 0)
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                //Hotel model = _mapper.Map<Hotel>(updateDTO); 
+                Hotel model = new()
+                {
+                    Id = updateDTO.Id,
+                    Description = updateDTO.Description,
+                    ImageUrl = updateDTO.ImageUrl,
+                    Name = updateDTO.Name,
+                    Rate = updateDTO.Rate
+                };
+
+                await _dbHotel.UpdateAsync(model);
+
+                _response.IsSuccess = true;
+                _response.StatusCode = HttpStatusCode.NoContent;
+
+                return Ok(_response);
             }
-
-            //Hotel model = _mapper.Map<Hotel>(updateDTO); 
-            Hotel model = new()
+            catch (Exception ex)
             {
-                Id = updateDTO.Id,
-                Description = updateDTO.Description,
-                ImageUrl = updateDTO.ImageUrl,
-                Name = updateDTO.Name,
-                Rate = updateDTO.Rate
-            };
-
-            await _dbHotel.UpdateAsync(model);
-
-            return NoContent();
+                _response.IsSuccess = false;
+                _response.Errors = new List<string> { ex.ToString() };
+            }
+            return _response;
         }
 
         [HttpPatch("{id:int}", Name = "UpdatePartialHotel")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> UpdatePartialHotel(int id, JsonPatchDocument<HotelUpdateDTO> patchDTO)
+        public async Task<ActionResult<APIResponse>> UpdatePartialHotel(int id, JsonPatchDocument<HotelUpdateDTO> patchDTO)
         {
-            if (patchDTO == null || id == 0)
+            try
             {
-                return BadRequest();
+                if (patchDTO == null || id == 0)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                var hotel = await _dbHotel.GetAsync(i => i.Id == id, tracked: false);
+
+                //HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
+                HotelUpdateDTO hotelDTO = new()
+                {
+                    Id = hotel.Id,
+                    Description = hotel.Description,
+                    ImageUrl = hotel.ImageUrl,
+                    Name = hotel.Name,
+                    Rate = hotel.Rate
+                };
+
+                if (hotel == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    return BadRequest(_response);
+                }
+
+                patchDTO.ApplyTo(hotelDTO, ModelState);
+
+                //Hotel model = _mapper.Map<Hotel>(patchDTO);
+                Hotel model = new()
+                {
+                    Id = hotelDTO.Id,
+                    Description = hotelDTO.Description,
+                    ImageUrl = hotelDTO.ImageUrl,
+                    Name = hotelDTO.Name,
+                    Rate = hotelDTO.Rate
+                };
+                model.UpdateDate = DateTime.Now;
+
+                await _dbHotel.UpdateAsync(model);
+
+                if (!ModelState.IsValid)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.Errors = new List<string> { "ModelState is invalid." };
+                    return BadRequest(_response);
+                }
+
+                _response.IsSuccess = true;
+                _response.StatusCode = HttpStatusCode.NoContent;
+                return Ok(_response);
             }
-
-            var hotel = await _dbHotel.GetAsync(i => i.Id == id, tracked: false);
-
-            //HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
-            HotelUpdateDTO hotelDTO = new()
+            catch (Exception ex)
             {
-                Id = hotel.Id,
-                Description = hotel.Description,
-                ImageUrl = hotel.ImageUrl,
-                Name = hotel.Name,
-                Rate = hotel.Rate
-            };
-
-            if (hotel == null)
-            {
-                return BadRequest();
+                _response.IsSuccess = false;
+                _response.Errors = new List<string> { ex.ToString() };
             }
-
-            patchDTO.ApplyTo(hotelDTO, ModelState);
-
-            //Hotel model = _mapper.Map<Hotel>(patchDTO);
-            Hotel model = new()
-            {
-                Id = hotelDTO.Id,
-                Description = hotelDTO.Description,
-                ImageUrl = hotelDTO.ImageUrl,
-                Name = hotelDTO.Name,
-                Rate = hotelDTO.Rate
-            };
-            model.UpdateDate = DateTime.Now;
-
-            await _dbHotel.UpdateAsync(model);
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest();
-            }
-
-            return NoContent();
+            return _response;
         }
     }
 }
