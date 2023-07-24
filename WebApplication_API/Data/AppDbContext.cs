@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApplication_API.Model;
+using WebApplication_API.Models;
 
 namespace WebApplication_API.Data
 {
@@ -10,6 +11,7 @@ namespace WebApplication_API.Data
         }
 
         public DbSet<Hotel> Hotels { get; set; }
+        public DbSet<HotelNumber> HotelNumbers { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Hotel>().HasData(
