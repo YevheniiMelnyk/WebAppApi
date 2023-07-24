@@ -103,7 +103,7 @@ namespace WebApplication_API.Controllers
                 return NotFound();
             }
 
-            _dbHotel.RemoveAsync(hotel);
+            await _dbHotel.RemoveAsync(hotel);
 
             return NoContent();
         }
@@ -121,14 +121,14 @@ namespace WebApplication_API.Controllers
             //Hotel model = _mapper.Map<Hotel>(updateDTO); 
             Hotel model = new()
             {
+                Id = updateDTO.Id,
                 Description = updateDTO.Description,
                 ImageUrl = updateDTO.ImageUrl,
                 Name = updateDTO.Name,
                 Rate = updateDTO.Rate
             };
-            model.UpdateDate = DateTime.Now;
 
-            _dbHotel.UpdateAsync(model);
+            await _dbHotel.UpdateAsync(model);
 
             return NoContent();
         }
@@ -145,10 +145,10 @@ namespace WebApplication_API.Controllers
 
             var hotel = await _dbHotel.GetAsync(i => i.Id == id, tracked: false);
 
-
             //HotelUpdateDTO hotelDTO = _mapper.Map<HotelUpdateDTO>(hotel);
             HotelUpdateDTO hotelDTO = new()
             {
+                Id = hotel.Id,
                 Description = hotel.Description,
                 ImageUrl = hotel.ImageUrl,
                 Name = hotel.Name,
@@ -165,6 +165,7 @@ namespace WebApplication_API.Controllers
             //Hotel model = _mapper.Map<Hotel>(patchDTO);
             Hotel model = new()
             {
+                Id = hotelDTO.Id,
                 Description = hotelDTO.Description,
                 ImageUrl = hotelDTO.ImageUrl,
                 Name = hotelDTO.Name,
@@ -172,7 +173,7 @@ namespace WebApplication_API.Controllers
             };
             model.UpdateDate = DateTime.Now;
 
-            _dbHotel.UpdateAsync(model);
+            await _dbHotel.UpdateAsync(model);
 
             if (!ModelState.IsValid)
             {

@@ -12,6 +12,5 @@ namespace WebApplication_API.Models.Dto
         [Required]
         public double Rate { get; set; }
         public string ImageUrl { get; set; }
-        public DateTime CreatedDate { get; set; }
     }
 }
